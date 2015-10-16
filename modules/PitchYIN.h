@@ -5,14 +5,26 @@ class PitchYIN
 
 public:
 
+//    PitchYIN (unsigned int bufferSize, unsigned int sampleRate)
+//    {
+//        yin = AudioSampleBuffer (1, bufferSize);
+//        this->sampleRate = sampleRate;
+//        tolerence = 0.15;
+//    }
+
     PitchYIN (unsigned int bufferSize)
     {
         yin = AudioSampleBuffer (1, bufferSize);
         tolerence = 0.15;
     }
+    
+    void setSampleRate(unsigned int newSampleRate)
+    {
+        sampleRate = newSampleRate;
+    }
 
     /** Output the difference function */
-    void difference(AudioSampleBuffer input) 
+    void difference(AudioSampleBuffer& input) 
     {
         float tmp;
         float *yinData = yin.getWritePointer(0);
@@ -47,7 +59,7 @@ public:
         //AUBIO_DBG("\n");
     }
 
-    int getPitch (Array<float> buffer) 
+    int getPitch ()
     {
         int tau = 0;
         float *yinData = yin.getWritePointer(0);
@@ -66,26 +78,29 @@ public:
         return 0;
         
     }
-
-    float calculatePitch (AudioSampleBuffer input) 
+    
+    
+    /** Full YIN algorithm */
+    float calculatePitch (const float* inputData) 
     {
         int period;
-        float tmp = 0.0, tmp2 = 0.0;
+        float delta = 0.0, runningSum = 0.0;
         float *yinData = yin.getWritePointer(0);
-        float *inputData = input.getReadPointer(0);
 
-        yinData[0] = 1.;
+        //DBG ("calculatePitch");
+
+        yinData[0] = 1.0;
         for (int tau = 1; tau < yin.getNumSamples(); tau++) {
-            yinData[tau] = 0.;
+            yinData[tau] = 0.0;
             for (int j = 0; j < yin.getNumSamples(); j++) {
-                tmp = inputData[j] - inputData[j + tau];
-                yinData[tau] += (tmp * tmp);
+                delta = inputData[j] - inputData[j + tau];
+                yinData[tau] += (delta * delta);
             }
-            tmp2 += yinData[tau];
-            if (tmp2 != 0) {
-                yinData[tau] *= tau / tmp2;
+            runningSum += yinData[tau];
+            if (runningSum != 0) {
+                yinData[tau] *= tau / runningSum;
             } else {
-                yinData[tau] = 1.;
+                yinData[tau] = 1.0;
             }
             period = tau - 3;
             if (tau > 4 && (yinData[period] < tolerence) &&
@@ -96,34 +111,40 @@ public:
         return quadraticPeakPosition (yin, minElement (yin));
     }
 
-    float getPitchInHz (AudioSampleBuffer input)
+    float getPitchInHz (const float* inputData)
     {
         float pitch = 0.;
         //slideBlock (input);
-        //pitch = calculate (buf);
-        pitch = calculate (input);
+        //pitch = calculatePitch (input);
+        pitch = calculatePitch (inputData);
+        //DBG ("pitch: " << pitch);
         
         if (pitch > 0) {
-            pitch = sampleRate / (pitch + 0.);
+            pitch = sampleRate / (pitch + 0.0);
         } else {
-            pitch = 0.;
+            pitch = 0.0;
         }
         currentPitch = pitch;
+        //DBG ("pitchInHz: " << pitch);
         return pitch;
     }
-
+    
+    void setTolerence(float newTolerence)
+    {
+        tolerence = newTolerence;
+    }
 
 private:
     AudioSampleBuffer yin, buf;
-    unsigned int tolerence, confidence;
+    unsigned int tolerence; //, confidence;
     unsigned int sampleRate;
     float currentPitch;
 
     /** adapter to stack ibuf new samples at the end of buf, and trim `buf` to `bufsize` */
-    void slideBlock (AudioSampleBuffer ibuf)
+    void slideBlock (AudioSampleBuffer& ibuf)
     {
         float *bufData = buf.getWritePointer(0);
-        float *ibufData = ibuf.getReadPointer(0);
+        const float *ibufData = ibuf.getReadPointer(0);
 
         unsigned int j = 0, overlapSize = 0;
         overlapSize = buf.getNumSamples() - ibuf.getNumSamples();
@@ -137,11 +158,11 @@ private:
         }
     }
 
-    // Below functions should go in seperate utilities class
+    // Below functions should go in a seperate utilities class
 
-    float quadraticPeakPosition (AudioSampleBuffer* x, unsigned int pos) {
+    float quadraticPeakPosition (AudioSampleBuffer& x, unsigned int pos) {
         float s0, s1, s2; 
-        float *xData = x.getReadPointer(0);
+        const float *xData = x.getReadPointer(0);
         unsigned int x0, x2;
         if (pos == 0 || pos == x.getNumSamples() - 1) return pos;
         x0 = (pos < 1) ? pos : pos - 1;
@@ -154,9 +175,9 @@ private:
         return pos + 0.5 * (s0 - s2 ) / (s0 - 2.* s1 + s2);
     }
 
-    unsigned int minElement (AudioSampleBuffer * s)
+    unsigned int minElement (AudioSampleBuffer& s)
     {
-        float *sData = s->getReadPointer(0);
+        const float *sData = s.getReadPointer(0);
     #ifndef JUCE_USE_VDSP_FRAMEWORK
         unsigned int j, pos = 0;
         float tmp = sData[0];
@@ -175,4 +196,4 @@ private:
     #endif
         return pos;
     }    
-}
+};
