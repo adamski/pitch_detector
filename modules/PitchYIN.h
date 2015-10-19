@@ -12,10 +12,8 @@ public:
 //        tolerence = 0.15;
 //    }
 
-    PitchYIN (unsigned int bufferSize)
+    PitchYIN (unsigned int bufferSize) : yin (1, bufferSize), tolerence (0.15)
     {
-        yin = AudioSampleBuffer (1, bufferSize);
-        tolerence = 0.15;
     }
     
     void setSampleRate(unsigned int newSampleRate)
@@ -81,7 +79,7 @@ public:
     
     
     /** Full YIN algorithm */
-    float calculatePitch (const float* inputData) 
+    float calculatePitch (const float* inputData) noexcept
     {
         int period;
         float delta = 0.0, runningSum = 0.0;
@@ -111,9 +109,9 @@ public:
         return quadraticPeakPosition (yin, minElement (yin));
     }
 
-    float getPitchInHz (const float* inputData)
+    float getPitchInHz (const float* inputData) noexcept
     {
-        float pitch = 0.;
+        float pitch = 0.0;
         //slideBlock (input);
         //pitch = calculatePitch (input);
         pitch = calculatePitch (inputData);
@@ -160,7 +158,8 @@ private:
 
     // Below functions should go in a seperate utilities class
 
-    float quadraticPeakPosition (AudioSampleBuffer& x, unsigned int pos) {
+    float quadraticPeakPosition (AudioSampleBuffer& x, unsigned int pos) noexcept
+    {
         float s0, s1, s2; 
         const float *xData = x.getReadPointer(0);
         unsigned int x0, x2;
@@ -175,7 +174,7 @@ private:
         return pos + 0.5 * (s0 - s2 ) / (s0 - 2.* s1 + s2);
     }
 
-    unsigned int minElement (AudioSampleBuffer& s)
+    unsigned int minElement (AudioSampleBuffer& s) noexcept
     {
         const float *sData = s.getReadPointer(0);
     #ifndef JUCE_USE_VDSP_FRAMEWORK
