@@ -5,14 +5,12 @@ class PitchYIN
 
 public:
 
-//    PitchYIN (unsigned int bufferSize, unsigned int sampleRate)
-//    {
-//        yin = AudioSampleBuffer (1, bufferSize);
-//        this->sampleRate = sampleRate;
-//        tolerence = 0.15;
-//    }
-
-    PitchYIN (unsigned int bufferSize) : yin (1, bufferSize), bufferSize (bufferSize), tolerence (0.15),
+    PitchYIN (int sampleRate, unsigned int bufferSize) : yin (1, bufferSize), bufferSize (bufferSize), sampleRate(sampleRate), tolerence (0.15),
+    deltaWasNegative (false)
+    {
+    }
+    
+    PitchYIN (unsigned int bufferSize) : yin (1, bufferSize), bufferSize (bufferSize), sampleRate(44100), tolerence (0.15),
     deltaWasNegative (false)
     {
     }

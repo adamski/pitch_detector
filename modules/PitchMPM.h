@@ -12,12 +12,12 @@ public:
 
     PitchMPM(int bufferSize) : bufferSize (bufferSize), sampleRate (44100)
     {
-        PitchMPM(bufferSize, sampleRate);
+        nsdf.insertMultiple(0, 0.0, bufferSize);
     }
     
     PitchMPM(int sampleRate, int bufferSize) : bufferSize (bufferSize), sampleRate (sampleRate)
     {
-        nsdf.insertMultiple(0, 0.0, bufferSize);
+        nsdf.insertMultiple(0, 0.0, bufferSize); // DRY!
     }
     
     
@@ -30,7 +30,7 @@ public:
         
     }
     
-    float getPitch(float *audioBuffer)
+    float getPitch(const float *audioBuffer)
     {
         
         float pitch;
@@ -47,11 +47,11 @@ public:
         
         for (auto tau : maxPositions)
         {
-            highestAmplitude = jmax(highestAmplitude, nsdf[tau]);
+            highestAmplitude = jmax(highestAmplitude, nsdf.getUnchecked(tau));
             
             if (nsdf[tau] > SMALL_CUTOFF)
             {
-                parabolicInterpolation(tau);
+                parabolicInterpolation (tau);
                 ampEstimates.add (turningPointY);
                 periodEstimates.add (turningPointX);
                 highestAmplitude = jmax (highestAmplitude, turningPointY);
@@ -106,14 +106,11 @@ private:
     Array<float> periodEstimates;
     Array<float> ampEstimates;
     
-//    int maxPositionsIndex, periodEstimatesIndex, ampEstimatesIndex;
-    
     void parabolicInterpolation(int tau)
     {
-        
-        float nsdfa = nsdf[tau - 1];
-        float nsdfb = nsdf[tau];
-        float nsdfc = nsdf[tau + 1];
+        float nsdfa = nsdf.getUnchecked (tau - 1);
+        float nsdfb = nsdf.getUnchecked (tau);
+        float nsdfc = nsdf.getUnchecked (tau + 1);
         float bValue = tau;
         float bottom = nsdfc + nsdfa - 2 * nsdfb;
         if (bottom == 0.0)
@@ -134,12 +131,13 @@ private:
         
         int pos = 0;
         int curMaxPos = 0;
+        float* nsdfPtr = nsdf.getRawDataPointer();
         
-        while (pos < (bufferSize - 1) / 3 && nsdf.getUnchecked(pos) > 0) {
+        while (pos < (bufferSize - 1) / 3 && nsdfPtr[pos] > 0) {
             pos++;
         }
         
-        while (pos < bufferSize - 1 && nsdf.getUnchecked(pos) <= 0.0) {
+        while (pos < bufferSize - 1 && nsdfPtr[pos] <= 0.0) {
             pos++;
         }
         
@@ -148,23 +146,20 @@ private:
         }
         
         while (pos < bufferSize - 1) {
-            if (nsdf.getUnchecked(pos) > nsdf.getUnchecked(pos - 1) && nsdf.getUnchecked(pos) >= nsdf.getUnchecked(pos + 1)) {
+            if (nsdfPtr[pos] > nsdfPtr[pos - 1] && nsdfPtr[pos] >= nsdfPtr[pos + 1]) {
                 if (curMaxPos == 0) {
                     curMaxPos = pos;
-                } else if (nsdf.getUnchecked(pos) > nsdf.getUnchecked(curMaxPos)) {
+                } else if (nsdfPtr[pos] > nsdfPtr[curMaxPos]) {
                     curMaxPos = pos;
                 }
             }
             pos++;
-            if (pos < bufferSize - 1 && nsdf.getUnchecked(pos) <= 0)
-            {
-                if (curMaxPos > 0)
-                {
+            if (pos < bufferSize - 1 && nsdfPtr[pos] <= 0) {
+                if (curMaxPos > 0) {
                     maxPositions.add (curMaxPos);
                     curMaxPos = 0;
                 }
-                while (pos < bufferSize - 1 && nsdf.getUnchecked(pos) <= 0.0f)
-                {
+                while (pos < bufferSize - 1 && nsdfPtr[pos] <= 0.0f) {
                     pos++;
                 }
             }
@@ -175,7 +170,7 @@ private:
         }
     }
     
-    void nsdfTimeDomain(float *audioBuffer)
+    void nsdfTimeDomain(const float *audioBuffer)
     {
         int tau;
         for (tau = 0; tau < bufferSize; tau++) {
