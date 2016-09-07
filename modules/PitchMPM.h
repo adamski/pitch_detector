@@ -1,6 +1,10 @@
 #include "JuceHeader.h"
 #include <float.h>
 
+/*
+ *  Adapted for JUCE from the McLeod Pitch Method implementation in https://github.com/sevagh/pitch-detection
+ */
+
 #define CUTOFF 0.93 //0.97 is default
 #define SMALL_CUTOFF 0.5
 #define LOWER_PITCH_CUTOFF 80 //hz
