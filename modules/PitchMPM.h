@@ -1,5 +1,12 @@
 #include "JuceHeader.h"
 #include <float.h>
+#include <complex>
+
+#if JUCE_IOS || JUCE_MAC // TODO: Move this to Projucer project
+#define AUDIOFFT_APPLE_ACCELERATE 1
+#endif
+
+//#include "AudioFFT.h"
 
 #define CUTOFF 0.93 //0.97 is default
 #define SMALL_CUTOFF 0.5
@@ -10,14 +17,19 @@ class PitchMPM
 
 public:
 
-    PitchMPM(int bufferSize) : bufferSize (bufferSize), sampleRate (44100)
+    PitchMPM(size_t bufferSize) : PitchMPM(44100, bufferSize) {}
+
+    PitchMPM(int sampleRate, size_t bufferSize) : bufferSize (bufferSize),
+                                                  sampleRate (sampleRate),
+                                                  fftSize (2 * bufferSize), // Needs to be a power of 2!
+                                                  //real (audiofft::AudioFFT::ComplexSize(fftSize)),
+                                                  //imag (audiofft::AudioFFT::ComplexSize(fftSize)),
+                                                  output (fftSize)
+
+
     {
         nsdf.insertMultiple(0, 0.0, bufferSize);
-    }
-    
-    PitchMPM(int sampleRate, int bufferSize) : bufferSize (bufferSize), sampleRate (sampleRate)
-    {
-        nsdf.insertMultiple(0, 0.0, bufferSize); // DRY!
+
     }
     
     
@@ -40,7 +52,9 @@ public:
         ampEstimates.clearQuick();
         
         nsdfTimeDomain(audioBuffer);
-        
+        //nsdf = Array<float> (nsdfFrequencyDomain(audioBuffer).data());
+        //nsdfFrequencyDomain(audioBuffer);
+
         peakPicking();
         
         float highestAmplitude = -FLT_MAX;
@@ -96,7 +110,15 @@ public:
     }
 
 private:
-    int bufferSize;
+    size_t bufferSize;
+
+    //audiofft::AudioFFT fft;
+    size_t fftSize;
+    std::vector<float> input;
+    std::vector<float> real;
+    std::vector<float> imag;
+    std::vector<float> output;
+
     float sampleRate;
     
     float turningPointX, turningPointY;
@@ -183,5 +205,64 @@ private:
             nsdf.setUnchecked(tau, 2 * acf / divisorM);
         }
     }
+
+
+//    std::vector<float> nsdfFrequencyDomain (const float *audioBuffer)
+//    {
+//        int size = bufferSize;
+//        int size2 = 2*size-1;
+//
+//        //std::vector<std::complex<float>> acf(size2);
+//        std::vector<float> acf_real(size2/2);
+//
+//
+//        std::vector<float> acf (autoCorrelation (audioBuffer));
+//
+//        /*
+//        for (auto it = acf.begin() + size2/2; it != acf.end(); ++it)
+//            acf_real.push_back((*it) / acf[size2 / 2]);
+//        */
+//
+//        for (int i = size2/2; i < acf.size(); ++i)
+//            nsdf.setUnchecked(i, acf[i] / acf[size2 / 2]);
+//
+//
+//        return acf_real;
+//    }
+//
+//    std::vector<float> autoCorrelation(const float *audioBuffer)
+//    {
+//
+//        std::vector<float> input (audioBuffer, audioBuffer + bufferSize);
+//        input.resize(fftSize, 0.0f);
+//
+//        fft.init(fftSize);
+//        fft.fft(input.data(), real.data(), imag.data());
+//
+//        // Complex Conjugate
+//        for (int i = 0; i < fftSize; ++i)
+//        {
+//            /**
+//             * std::complex method
+//             */
+//            std::complex<float> complex(real[i], imag[i]);
+//            complex = complex * std::conj(complex); // No need to scale as AudioFFT does this already
+//            real[i] = complex.real();
+//            imag[i] = complex.imag();
+//
+//            /**
+//             * calculate via real[i] * real[i] + imag[i] * imag[i].
+//             * And if you really mean complex conjugation, just negate imag[i]
+//             */
+//
+//            //imag[i] *= -1;
+//            //real[i] = real[i] * real[i]; // + imag[i] * imag[i];
+//        }
+//
+//        fft.ifft(output.data(), real.data(), imag.data());
+//        return output;
+//    }
+//
+
 
 };
