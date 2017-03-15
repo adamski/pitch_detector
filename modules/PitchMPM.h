@@ -6,7 +6,7 @@
 #define AUDIOFFT_APPLE_ACCELERATE 1
 #endif
 
-//#include "AudioFFT.h"
+#include "AudioFFT.h"
 
 #define CUTOFF 0.93 //0.97 is default
 #define SMALL_CUTOFF 0.5
@@ -51,17 +51,24 @@ public:
         periodEstimates.clearQuick();
         ampEstimates.clearQuick();
         
-        nsdfTimeDomain(audioBuffer);
-        //nsdf = Array<float> (nsdfFrequencyDomain(audioBuffer).data());
+        //nsdfTimeDomain(audioBuffer);
         //nsdfFrequencyDomain(audioBuffer);
-
-        peakPicking();
+        
+        if (audioBuffer == nullptr)
+        {
+            DBG ("audioBuffer NULL");
+            return 0.0f;
+        }
+        //nsdf = Array<float> (nsdfFrequencyDomain(audioBuffer).data());
+        std::vector<float> _nsdf = nsdfFrequencyDomain(audioBuffer);
+        peak_picking(_nsdf);
+        //peakPicking();
         
         float highestAmplitude = -FLT_MAX;
         
         for (auto tau : maxPositions)
         {
-            highestAmplitude = jmax(highestAmplitude, nsdf.getUnchecked(tau));
+            highestAmplitude = jmax(highestAmplitude, nsdf.getUnchecked(x§tau));
             
             if (nsdf[tau] > SMALL_CUTOFF)
             {
@@ -112,7 +119,7 @@ public:
 private:
     size_t bufferSize;
 
-    //audiofft::AudioFFT fft;
+    audiofft::AudioFFT fft;
     size_t fftSize;
     std::vector<float> input;
     std::vector<float> real;
@@ -162,7 +169,7 @@ private:
         while (pos < bufferSize - 1 && nsdfPtr[pos] <= 0.0) {
             pos++;
         }
-        
+
         if (pos == 0) {
             pos = 1;
         }
@@ -192,6 +199,43 @@ private:
         }
     }
     
+    static std::vector<int> peak_picking(std::vector<float> nsdf)
+    {
+        std::vector<int> max_positions{};
+        int pos = 0;
+        int curMaxPos = 0;
+        ssize_t size = nsdf.size();
+        
+        while (pos < (size - 1) / 3 && nsdf[pos] > 0) pos++;
+        while (pos < size - 1 && nsdf[pos] <= 0.0) pos++;
+        
+        if (pos == 0) pos = 1;
+        
+        while (pos < size - 1) {
+            if (nsdf[pos] > nsdf[pos - 1] && nsdf[pos] >= nsdf[pos + 1]) {
+                if (curMaxPos == 0) {
+                    curMaxPos = pos;
+                } else if (nsdf[pos] > nsdf[curMaxPos]) {
+                    curMaxPos = pos;
+                }
+            }
+            pos++;
+            if (pos < size - 1 && nsdf[pos] <= 0) {
+                if (curMaxPos > 0) {
+                    max_positions.push_back(curMaxPos);
+                    curMaxPos = 0;
+                }
+                while (pos < size - 1 && nsdf[pos] <= 0.0) {
+                    pos++;
+                }
+            }
+        }
+        if (curMaxPos > 0) {
+            max_positions.push_back(curMaxPos);
+        }
+        return max_positions;
+    }
+    
     void nsdfTimeDomain(const float *audioBuffer)
     {
         int tau;
@@ -206,63 +250,82 @@ private:
         }
     }
 
+    // FFT based methods
+    std::vector<float> nsdfFrequencyDomain (const float *audioBuffer)
+    {
+        int size = bufferSize;
+        int size2 = 2*size; //-1;
 
-//    std::vector<float> nsdfFrequencyDomain (const float *audioBuffer)
-//    {
-//        int size = bufferSize;
-//        int size2 = 2*size-1;
-//
-//        //std::vector<std::complex<float>> acf(size2);
-//        std::vector<float> acf_real(size2/2);
-//
-//
-//        std::vector<float> acf (autoCorrelation (audioBuffer));
-//
-//        /*
-//        for (auto it = acf.begin() + size2/2; it != acf.end(); ++it)
-//            acf_real.push_back((*it) / acf[size2 / 2]);
-//        */
-//
+        //std::vector<std::complex<float>> acf(size2);
+        std::vector<float> acf_real(size2/2);
+        real.resize (bufferSize);
+        imag.resize (bufferSize);
+
+
+        if (audioBuffer == nullptr)
+            DBG ("audioBuffer NULL: nsdfFrequencyDomain");
+        
+        std::vector<float> acf (autoCorrelation (audioBuffer));
+
+        /*
+        for (auto it = acf.begin() + size2/2; it != acf.end(); ++it)
+            acf_real.push_back((*it) / acf[size2 / 2]);
+        */
+        
+        for (auto it = acf.begin() + size2/2; it != acf.end(); ++it)
+            acf_real.push_back((*it)/acf[size2/2]);
+            //acf_real.push_back((*it).real()/acf[size2/2].real());
+
 //        for (int i = size2/2; i < acf.size(); ++i)
 //            nsdf.setUnchecked(i, acf[i] / acf[size2 / 2]);
-//
-//
-//        return acf_real;
-//    }
-//
-//    std::vector<float> autoCorrelation(const float *audioBuffer)
-//    {
-//
-//        std::vector<float> input (audioBuffer, audioBuffer + bufferSize);
-//        input.resize(fftSize, 0.0f);
-//
-//        fft.init(fftSize);
-//        fft.fft(input.data(), real.data(), imag.data());
-//
-//        // Complex Conjugate
-//        for (int i = 0; i < fftSize; ++i)
-//        {
-//            /**
-//             * std::complex method
-//             */
-//            std::complex<float> complex(real[i], imag[i]);
-//            complex = complex * std::conj(complex); // No need to scale as AudioFFT does this already
-//            real[i] = complex.real();
-//            imag[i] = complex.imag();
-//
-//            /**
-//             * calculate via real[i] * real[i] + imag[i] * imag[i].
-//             * And if you really mean complex conjugation, just negate imag[i]
-//             */
-//
-//            //imag[i] *= -1;
-//            //real[i] = real[i] * real[i]; // + imag[i] * imag[i];
-//        }
-//
-//        fft.ifft(output.data(), real.data(), imag.data());
-//        return output;
-//    }
-//
+        
+
+        return acf_real;
+    }
+
+    std::vector<float> autoCorrelation(const float *audioBuffer)
+    {
+        if (audioBuffer == nullptr)
+            DBG ("audioBuffer NULL: autoCorrelation");
+        
+        //AudioSampleBuffer paddedAudioBuffer (audioBuffer, 1, fftSize);
+        std::vector<float> input (audioBuffer, audioBuffer + bufferSize);
+        input.resize(fftSize, 0.0f);
+        
+        if (audioBuffer == nullptr)
+            DBG ("audioBuffer NULL: autoCorrelation post resize");
+        
+        if (input.data() == nullptr)
+            DBG ("input.data() NULL: autoCorrelation post resize");
+
+        fft.init(fftSize);
+        fft.fft(input.data(), real.data(), imag.data());
+        //fft.fft(audioBuffer, real.data(), imag.data());
+
+        // Complex Conjugate
+        for (int i = 0; i < fftSize; ++i)
+        {
+            /**
+             * std::complex method
+             */
+            std::complex<float> complex(real[i], imag[i]);
+            complex = complex * std::conj(complex); // No need to scale as AudioFFT does this already
+            real[i] = complex.real();
+            imag[i] = complex.imag();
+
+            /**
+             * calculate via real[i] * real[i] + imag[i] * imag[i].
+             * And if you really mean complex conjugation, just negate imag[i]
+             */
+
+            //imag[i] *= -1;
+            //real[i] = real[i] * real[i]; // + imag[i] * imag[i];
+        }
+
+        fft.ifft(output.data(), real.data(), imag.data());
+        return output;
+    }
+
 
 
 };
