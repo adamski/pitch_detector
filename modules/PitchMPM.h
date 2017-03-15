@@ -22,8 +22,8 @@ public:
     PitchMPM(int sampleRate, size_t bufferSize) : bufferSize (bufferSize),
                                                   sampleRate (sampleRate),
                                                   fftSize (2 * bufferSize), // Needs to be a power of 2!
-                                                  //real (audiofft::AudioFFT::ComplexSize(fftSize)),
-                                                  //imag (audiofft::AudioFFT::ComplexSize(fftSize)),
+                                                  real (audiofft::AudioFFT::ComplexSize(fftSize)),
+                                                  imag (audiofft::AudioFFT::ComplexSize(fftSize)),
                                                   output (fftSize)
 
 
@@ -45,8 +45,6 @@ public:
     float getPitch(const float *audioBuffer)
     {
         
-        float pitch;
-        
         maxPositions.clearQuick();
         periodEstimates.clearQuick();
         ampEstimates.clearQuick();
@@ -61,54 +59,41 @@ public:
         }
         //nsdf = Array<float> (nsdfFrequencyDomain(audioBuffer).data());
         std::vector<float> _nsdf = nsdfFrequencyDomain(audioBuffer);
-        peak_picking(_nsdf);
+        std::vector<int> max_positions = peak_picking(_nsdf);
+        std::vector<std::pair<float, float>> estimates;
+
         //peakPicking();
         
         float highestAmplitude = -FLT_MAX;
         
-        for (auto tau : maxPositions)
+        for (auto tau : max_positions)
         {
-            highestAmplitude = jmax(highestAmplitude, nsdf.getUnchecked(x§tau));
+            highestAmplitude = jmax(highestAmplitude, _nsdf[tau]);
             
-            if (nsdf[tau] > SMALL_CUTOFF)
+            if (_nsdf[tau] > SMALL_CUTOFF)
             {
-                parabolicInterpolation (tau);
-                ampEstimates.add (turningPointY);
-                periodEstimates.add (turningPointX);
-                highestAmplitude = jmax (highestAmplitude, turningPointY);
+                auto x = parabolic_interpolation(_nsdf, tau);
+                estimates.push_back(x);
+                highestAmplitude = std::max(highestAmplitude, std::get<1>(x));
             }
         }
-        
-        if (periodEstimates.size() == 0)
+
+        if (estimates.empty()) return -1;
+
+        float actualCutoff = CUTOFF * highestAmplitude;
+        float period = 0;
+
+        for (auto estimate : estimates)
         {
-            pitch = -1;
-        }
-        else
-        {
-            float actualCutoff = CUTOFF * highestAmplitude;
-            
-            int periodIndex = 0;
-            for (int i = 0; i < ampEstimates.size(); i++)
+            if (std::get<1>(estimate) >= actualCutoff)
             {
-                if (ampEstimates[i] >= actualCutoff)
-                {
-                    periodIndex = i;
-                    break;
-                }
-            }
-            
-            float period = periodEstimates[periodIndex];
-            float pitchEstimate = (sampleRate / period);
-            if (pitchEstimate > LOWER_PITCH_CUTOFF)
-            {
-                pitch = pitchEstimate;
-            }
-            else
-            {
-                pitch = -1;
+                period = std::get<0>(estimate);
+                break;
             }
         }
-        return pitch;
+
+        float pitchEstimate = (sampleRate / period);
+        return (pitchEstimate > LOWER_PITCH_CUTOFF) ? pitchEstimate : -1;
     }
     
     void setSampleRate (int newSampleRate)
@@ -198,6 +183,22 @@ private:
             maxPositions.add (curMaxPos);
         }
     }
+
+    inline std::pair<float, float> parabolic_interpolation(std::vector<float> array, float x)
+    {
+        int x_adjusted;
+
+        if (x < 1) {
+            x_adjusted = (array[x] <= array[x+1]) ? x : x+1;
+        } else if (x > signed(array.size())-1) {
+            x_adjusted = (array[x] <= array[x-1]) ? x : x-1;
+        } else {
+            float den = array[x+1] + array[x-1] - 2 * array[x];
+            float delta = array[x-1] - array[x+1];
+            return (!den) ? std::make_pair(x, array[x]) : std::make_pair(x + delta / (2 * den), array[x] - delta*delta/(8*den));
+        }
+        return std::make_pair(x_adjusted, array[x_adjusted]);
+    }
     
     static std::vector<int> peak_picking(std::vector<float> nsdf)
     {
@@ -253,14 +254,13 @@ private:
     // FFT based methods
     std::vector<float> nsdfFrequencyDomain (const float *audioBuffer)
     {
-        int size = bufferSize;
-        int size2 = 2*size; //-1;
+        int size2 = 2*bufferSize; //-1;
 
         //std::vector<std::complex<float>> acf(size2);
-        std::vector<float> acf_real(size2/2);
+        //std::vector<float> acf_real{};
+        
         real.resize (bufferSize);
         imag.resize (bufferSize);
-
 
         if (audioBuffer == nullptr)
             DBG ("audioBuffer NULL: nsdfFrequencyDomain");
@@ -272,15 +272,18 @@ private:
             acf_real.push_back((*it) / acf[size2 / 2]);
         */
         
+        /** This code is for interleaved data, above is not
         for (auto it = acf.begin() + size2/2; it != acf.end(); ++it)
             acf_real.push_back((*it)/acf[size2/2]);
             //acf_real.push_back((*it).real()/acf[size2/2].real());
+         ****************************************************/
 
 //        for (int i = size2/2; i < acf.size(); ++i)
 //            nsdf.setUnchecked(i, acf[i] / acf[size2 / 2]);
         
 
-        return acf_real;
+        //return acf_real;
+        return acf;
     }
 
     std::vector<float> autoCorrelation(const float *audioBuffer)
