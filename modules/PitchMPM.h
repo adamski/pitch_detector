@@ -2,7 +2,7 @@
 #include <float.h>
 #include <complex>
 
-#if JUCE_IOS || JUCE_MAC // TODO: Move this to Projucer project
+#if JUCE_IOS || JUCE_MAC // TODO: Move this to Projucer project?
 #define AUDIOFFT_APPLE_ACCELERATE 1
 #endif
 
@@ -11,6 +11,10 @@
 #define CUTOFF 0.93 //0.97 is default
 #define SMALL_CUTOFF 0.5
 #define LOWER_PITCH_CUTOFF 80 //hz
+
+/**
+ * TODO: Provide switch between time-based and FFT based methods
+ */
 
 class PitchMPM
 {
@@ -28,14 +32,14 @@ public:
 
 
     {
-        nsdf.insertMultiple(0, 0.0, bufferSize);
+        //nsdf.insertMultiple(0, 0.0, bufferSize);
 
     }
     
     
     ~PitchMPM()
     {
-        nsdf.clear();
+        //nsdf.clear();
         maxPositions.clear();
         ampEstimates.clear();
         periodEstimates.clear();
@@ -114,12 +118,13 @@ private:
     float sampleRate;
     
     float turningPointX, turningPointY;
-    Array<float> nsdf;
+    //Array<float> nsdf;
     
     Array<int> maxPositions;
     Array<float> periodEstimates;
     Array<float> ampEstimates;
     
+    /*
     void parabolicInterpolation(int tau)
     {
         float nsdfa = nsdf.getUnchecked (tau - 1);
@@ -183,6 +188,7 @@ private:
             maxPositions.add (curMaxPos);
         }
     }
+     */
 
     inline std::pair<float, float> parabolic_interpolation(std::vector<float> array, float x)
     {
@@ -237,6 +243,7 @@ private:
         return max_positions;
     }
     
+    /*
     void nsdfTimeDomain(const float *audioBuffer)
     {
         int tau;
@@ -250,17 +257,16 @@ private:
             nsdf.setUnchecked(tau, 2 * acf / divisorM);
         }
     }
+    */
 
     // FFT based methods
     std::vector<float> nsdfFrequencyDomain (const float *audioBuffer)
     {
-        int size2 = 2*bufferSize; //-1;
-
         //std::vector<std::complex<float>> acf(size2);
         //std::vector<float> acf_real{};
-        
-        real.resize (bufferSize);
-        imag.resize (bufferSize);
+    
+        real.resize (fftSize);
+        imag.resize (fftSize);
 
         if (audioBuffer == nullptr)
             DBG ("audioBuffer NULL: nsdfFrequencyDomain");
