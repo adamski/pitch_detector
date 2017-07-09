@@ -1,0 +1,6 @@
+PROJECT_NAME = .
+INPUT = 
+OUTPUT_DIRECTORY = docs
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+HTML_OUTPUT            = .
