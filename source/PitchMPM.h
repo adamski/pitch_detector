@@ -1,12 +1,9 @@
-#include "JuceHeader.h"
-#include <float.h>
-#include <complex>
+
+
 
 #if JUCE_IOS || JUCE_MAC // TODO: Move this to Projucer project?
 #define AUDIOFFT_APPLE_ACCELERATE 1
 #endif
-
-#include "AudioFFT.h"
 
 #define CUTOFF 0.93 //0.97 is default
 #define SMALL_CUTOFF 0.5

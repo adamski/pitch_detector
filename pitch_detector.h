@@ -5,10 +5,10 @@
   vendor:           adamski
   version:          0.2.0
   name:             Pitch Detector
-  description:      Pitch detection methods
+  description:      Pitch estimation methods
   website:          http://www.github.com/adamski/pitch_detector
   license:          MIT
-  dependencies:     juce_core 
+  dependencies:     juce_core, audio_fft
   OSXFrameworks:    
   iOSFrameworks:    
  END_JUCE_MODULE_DECLARATION
@@ -16,12 +16,15 @@
 
 #pragma once
 #include <juce_core/juce_core.h>
+#include <audio_fft/audio_fft.h>
+#include <float.h>
+#include <complex>
 
 namespace adamski {
     
 using namespace juce;
 
 #include "source/PitchMPM.h"
-#include "source/PitchMPM.h"
+#include "source/PitchYIN.h"
 
 }
