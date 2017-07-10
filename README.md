@@ -1,7 +1,6 @@
-# PitchDetector
+# Pitch Detector
 JUCE module for pitch estimation
 
-Based on the YIN implementation found in the aubio library. 
-Adapted as a JUCE C++ class. 
+PitchYIN class based on the YIN implementation found in the aubio library
 
-Soon to be made into a proper JUCE module! 
+PitchMPM class adapted from the McLeod Pitch Method implementation in https://github.com/sevagh/pitch-detection
