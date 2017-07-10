@@ -8,14 +8,16 @@
   description:      Pitch estimation methods
   website:          http://www.github.com/adamski/pitch_detector
   license:          MIT
-  dependencies:     juce_core, audio_fft
+  dependencies:     juce_core, juce_audio_basics, audio_fft
   OSXFrameworks:    
   iOSFrameworks:    
  END_JUCE_MODULE_DECLARATION
  */
 
 #pragma once
+#include "AppConfig.h"
 #include <juce_core/juce_core.h>
+#include <juce_audio_basics/juce_audio_basics.h>
 #include <audio_fft/audio_fft.h>
 #include <float.h>
 #include <complex>
