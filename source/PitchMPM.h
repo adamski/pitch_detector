@@ -102,6 +102,16 @@ public:
         sampleRate = newSampleRate;
     }
 
+    void setBufferSize (int newBufferSize)
+    {
+        bufferSize = newBufferSize;
+        input.resize (bufferSize);
+        fftSize = 2 * bufferSize;
+        real.resize (audiofft::AudioFFT::ComplexSize(fftSize));
+        imag.resize (audiofft::AudioFFT::ComplexSize(fftSize));
+        output.resize (fftSize);
+    }
+
 private:
     size_t bufferSize;
 
