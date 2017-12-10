@@ -1,11 +1,11 @@
 # Pitch Detector
 JUCE module for pitch estimation
 
-PitchYIN class based on the YIN implementation found in the aubio library
+PitchYIN class based on the YIN implementation found in the [aubio](https://aubio.org) library
 
 PitchMPM class adapted from the McLeod Pitch Method implementation in https://github.com/sevagh/pitch-detection
 
-The updated version of the PitchMPM class now uses FFT for the Normalised Squared Difference Function using the AudioFFT library (via the module wrapper at https://github.com/adamski/audio_fft). The previous time-based version is now in the `time-based` branch. 
+The updated version of the PitchMPM class now uses FFT for the auto-correlation function using the AudioFFT library (via the module wrapper at https://github.com/adamski/audio_fft). The previous time-based version is now in the `time-based` branch. 
 
 ### TODO
 - [ ] Seperate time-based method into another class that can be used as an alternative to the FFT based method
