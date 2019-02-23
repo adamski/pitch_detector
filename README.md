@@ -7,6 +7,24 @@ PitchMPM class adapted from the McLeod Pitch Method implementation in https://gi
 
 The updated version of the PitchMPM class now uses FFT for the auto-correlation function using the AudioFFT library (via the module wrapper at https://github.com/adamski/audio_fft). The previous time-based version is now in the `time-based` branch. 
 
+### Usage
+
+**NOTE:** `bufferSize` should be a power of 2!
+
+```cpp
+// Class members
+PitchMPM pitchMPM;     
+AudioSampleBuffer sampleBuffer;
+
+// Setup / prepare
+pitchMPM.setBufferSize (bufferSize);
+pitchMPM.setSampleRate (sampleRate);
+
+// Process
+float newPitch = pitchMPM.getPitch (sampleBuffer.getReadPointer (0));
+```
+
+
 ### TODO
 - [ ] Seperate time-based method into another class that can be used as an alternative to the FFT based method
 - [ ] Add FFT based YIN implementation (not a priority, MPM works well for my needs - PR's welcome)
