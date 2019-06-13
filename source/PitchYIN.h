@@ -146,7 +146,7 @@ private:
     AudioSampleBuffer yin; //, buf;
     //float* yinData;
     unsigned int bufferSize;
-    unsigned int tolerence; //, confidence;
+    float tolerence; //, confidence;
     unsigned int sampleRate;
     bool deltaWasNegative;
     float currentPitch;

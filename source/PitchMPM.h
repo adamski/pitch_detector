@@ -1,6 +1,5 @@
 
 
-
 #if JUCE_IOS || JUCE_MAC // TODO: Move this to Projucer project?
 #define AUDIOFFT_APPLE_ACCELERATE 1
 #endif
@@ -36,6 +35,7 @@ public:
     
     ~PitchMPM()
     {
+        
         //nsdf.clear();
         maxPositions.clear();
         ampEstimates.clear();
