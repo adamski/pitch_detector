@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include "AppConfig.h"
 #include <juce_core/juce_core.h>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <audio_fft/audio_fft.h>
