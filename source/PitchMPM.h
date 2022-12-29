@@ -60,7 +60,7 @@ public:
 
             if (nsdf[tauPosition] > SMALL_CUTOFF)
             {
-                auto x = parabolicInterpolation (nsdf, tauPosition);
+                auto x = parabolicInterpolation (nsdf, float (tauPosition));
                 estimates.push_back (x);
                 highestAmplitude = std::max (highestAmplitude, std::get<1> (x));
             }
@@ -87,7 +87,7 @@ public:
 
     void setSampleRate (int newSampleRate)
     {
-        sampleRate = newSampleRate;
+        sampleRate = float (newSampleRate);
     }
 
     void setBufferSize (int newBufferSize)
@@ -133,7 +133,7 @@ private:
             float delta = array[xPosition - 1] - array[xPosition + 1];
             return (den == 0.0f) ? std::make_pair (x, array[xPosition]) : std::make_pair (x + delta / (2 * den), array[xPosition] - delta * delta / (8 * den));
         }
-        return std::make_pair (xAdjusted, array[size_t (xAdjusted)]);
+        return std::make_pair (float (xAdjusted), array[size_t (xAdjusted)]);
     }
 
     static std::vector<int> peakPicking (std::vector<float> nsdf)
@@ -141,7 +141,7 @@ private:
         std::vector<int> max_positions {};
         int pos = 0;
         int curMaxPos = 0;
-        ssize_t size = ssize_t (nsdf.size());
+        juce::ssize_t size = juce::ssize_t (nsdf.size());
 
         while (pos < (size - 1) / 3 && nsdf[size_t (pos)] > 0)
             pos++;
@@ -211,7 +211,9 @@ private:
         imag.resize (fftSize);
 
         if (audioBuffer == nullptr)
+        {
             DBG ("audioBuffer NULL: nsdfFrequencyDomain");
+        }
 
         std::vector<float> acf (autoCorrelation (audioBuffer));
 
@@ -236,17 +238,23 @@ private:
     std::vector<float> autoCorrelation (const float* audioBuffer)
     {
         if (audioBuffer == nullptr)
+        {
             DBG ("audioBuffer NULL: autoCorrelation");
+        }
 
         //AudioSampleBuffer paddedAudioBuffer (audioBuffer, 1, fftSize);
         std::vector<float> inputBuf (audioBuffer, audioBuffer + bufferSize);
         inputBuf.resize (fftSize, 0.0f);
 
         if (audioBuffer == nullptr)
+        {
             DBG ("audioBuffer NULL: autoCorrelation post resize");
+        }
 
         if (inputBuf.data() == nullptr)
+        {
             DBG ("inputBuf.data() NULL: autoCorrelation post resize");
+        }
 
         fft.init (fftSize);
         fft.fft (inputBuf.data(), real.data(), imag.data());

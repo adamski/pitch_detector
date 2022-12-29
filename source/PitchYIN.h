@@ -174,11 +174,14 @@ private:
     {
         float s0, s1, s2;
         unsigned int x0, x2;
-        if (pos == 0 || pos == bufferSize - 1) return pos;
+
+        if (pos == 0 || pos == bufferSize - 1) 
+            return float (pos);
+
         x0 = (pos < 1) ? pos : pos - 1;
         x2 = (pos + 1 < bufferSize) ? pos + 1 : pos;
-        if (x0 == pos) return (data[pos] <= data[x2]) ? pos : x2;
-        if (x2 == pos) return (data[pos] <= data[x0]) ? pos : x0;
+        if (x0 == pos) return float ((data[pos] <= data[x2]) ? pos : x2);
+        if (x2 == pos) return float ((data[pos] <= data[x0]) ? pos : x0);
         s0 = data[x0];
         s1 = data[pos];
         s2 = data[x2];

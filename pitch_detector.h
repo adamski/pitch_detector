@@ -18,8 +18,10 @@
 #include <juce_core/juce_core.h>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <audio_fft/audio_fft.h>
+
 #include <float.h>
 #include <complex>
+#include <sys/types.h>
 
 namespace adamski {
     
