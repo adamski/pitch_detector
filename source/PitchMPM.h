@@ -141,7 +141,7 @@ private:
         std::vector<int> max_positions {};
         int pos = 0;
         int curMaxPos = 0;
-        juce::ssize_t size = juce::ssize_t (nsdf.size());
+        juce::pointer_sized_int size = juce::pointer_sized_int (nsdf.size());
 
         while (pos < (size - 1) / 3 && nsdf[size_t (pos)] > 0)
             pos++;
