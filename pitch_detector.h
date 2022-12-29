@@ -23,8 +23,6 @@
 
 namespace adamski {
     
-using namespace juce;
-
 #include "source/PitchMPM.h"
 #include "source/PitchYIN.h"
 

@@ -56,7 +56,7 @@ public:
         for (auto tau : maxPositions)
         {
             auto tauPosition = size_t (tau);
-            highestAmplitude = jmax (highestAmplitude, nsdf[tauPosition]);
+            highestAmplitude = std::max (highestAmplitude, nsdf[tauPosition]);
 
             if (nsdf[tauPosition] > SMALL_CUTOFF)
             {
@@ -111,13 +111,8 @@ private:
     std::vector<float> imag;
     std::vector<float> output;
 
-    float turningPointX, turningPointY;
-    //Array<float> nsdf;
-
-//    Array<int> maxPositions;
-    Array<float> periodEstimates;
-    Array<float> ampEstimates;
-
+    juce::Array<float> periodEstimates;
+    juce::Array<float> ampEstimates;
 
     inline std::pair<float, float> parabolicInterpolation (std::vector<float> array, float x)
     {
@@ -126,17 +121,17 @@ private:
 
         if (x < 1)
         {
-            xAdjusted = (array[xPosition] <= array[xPosition + 1]) ? x : x + 1;
+            xAdjusted = int ((array[xPosition] <= array[xPosition + 1]) ? x : x + 1);
         }
         else if (x > signed (array.size()) - 1)
         {
-            xAdjusted = (array[xPosition] <= array[xPosition - 1]) ? x : x - 1;
+            xAdjusted = int ((array[xPosition] <= array[xPosition - 1]) ? x : x - 1);
         }
         else
         {
             float den = array[xPosition + 1] + array[xPosition - 1] - 2 * array[xPosition];
             float delta = array[xPosition - 1] - array[xPosition + 1];
-            return (! den) ? std::make_pair (x, array[xPosition]) : std::make_pair (x + delta / (2 * den), array[xPosition] - delta * delta / (8 * den));
+            return (den == 0.0f) ? std::make_pair (x, array[xPosition]) : std::make_pair (x + delta / (2 * den), array[xPosition] - delta * delta / (8 * den));
         }
         return std::make_pair (xAdjusted, array[size_t (xAdjusted)]);
     }
@@ -146,11 +141,11 @@ private:
         std::vector<int> max_positions {};
         int pos = 0;
         int curMaxPos = 0;
-        ssize_t size = nsdf.size();
+        ssize_t size = ssize_t (nsdf.size());
 
-        while (pos < (size - 1) / 3 && nsdf[pos] > 0)
+        while (pos < (size - 1) / 3 && nsdf[size_t (pos)] > 0)
             pos++;
-        while (pos < size - 1 && nsdf[pos] <= 0.0)
+        while (pos < size - 1 && nsdf[size_t (pos)] <= 0.0)
             pos++;
 
         if (pos == 0)
@@ -158,26 +153,26 @@ private:
 
         while (pos < size - 1)
         {
-            if (nsdf[pos] > nsdf[pos - 1] && nsdf[pos] >= nsdf[pos + 1])
+            if (nsdf[size_t (pos)] > nsdf[size_t (pos - 1)] && nsdf[size_t (pos)] >= nsdf[size_t (pos + 1)])
             {
                 if (curMaxPos == 0)
                 {
                     curMaxPos = pos;
                 }
-                else if (nsdf[pos] > nsdf[curMaxPos])
+                else if (nsdf[size_t (pos)] > nsdf[size_t (curMaxPos)])
                 {
                     curMaxPos = pos;
                 }
             }
             pos++;
-            if (pos < size - 1 && nsdf[pos] <= 0)
+            if (pos < size - 1 && nsdf[size_t (pos)] <= 0)
             {
                 if (curMaxPos > 0)
                 {
                     max_positions.push_back (curMaxPos);
                     curMaxPos = 0;
                 }
-                while (pos < size - 1 && nsdf[pos] <= 0.0)
+                while (pos < size - 1 && nsdf[size_t (pos)] <= 0.0)
                 {
                     pos++;
                 }
@@ -244,29 +239,29 @@ private:
             DBG ("audioBuffer NULL: autoCorrelation");
 
         //AudioSampleBuffer paddedAudioBuffer (audioBuffer, 1, fftSize);
-        std::vector<float> input (audioBuffer, audioBuffer + bufferSize);
-        input.resize (fftSize, 0.0f);
+        std::vector<float> inputBuf (audioBuffer, audioBuffer + bufferSize);
+        inputBuf.resize (fftSize, 0.0f);
 
         if (audioBuffer == nullptr)
             DBG ("audioBuffer NULL: autoCorrelation post resize");
 
-        if (input.data() == nullptr)
-            DBG ("input.data() NULL: autoCorrelation post resize");
+        if (inputBuf.data() == nullptr)
+            DBG ("inputBuf.data() NULL: autoCorrelation post resize");
 
         fft.init (fftSize);
-        fft.fft (input.data(), real.data(), imag.data());
+        fft.fft (inputBuf.data(), real.data(), imag.data());
         //fft.fft(audioBuffer, real.data(), imag.data());
 
         // Complex Conjugate
-        for (int i = 0; i < fftSize; ++i)
+        for (int i = 0; i < int (fftSize); ++i)
         {
             /**
              * std::complex method
              */
-            std::complex<float> complex (real[i], imag[i]);
+            std::complex<float> complex (real[size_t (i)], imag[size_t (i)]);
             complex = complex * std::conj (complex); // No need to scale as AudioFFT does this already
-            real[i] = complex.real();
-            imag[i] = complex.imag();
+            real[size_t (i)] = complex.real();
+            imag[size_t (i)] = complex.imag();
 
             /**
              * calculate via real[i] * real[i] + imag[i] * imag[i].

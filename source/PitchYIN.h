@@ -3,30 +3,28 @@ class PitchYIN
 
 public:
 
-    PitchYIN (int sampleRate, unsigned int bufferSize) : yin (1, bufferSize), bufferSize (bufferSize), sampleRate(sampleRate), tolerence (0.15),
-    deltaWasNegative (false)
+    PitchYIN (int sampleRate_, unsigned int bufferSize_) : yin (1, int (bufferSize_)), bufferSize (bufferSize_), tolerence (0.15f), sampleRate((unsigned int)sampleRate_)
     {
     }
     
-    PitchYIN (unsigned int bufferSize) : yin (1, bufferSize), bufferSize (bufferSize), sampleRate(44100), tolerence (0.15),
-    deltaWasNegative (false)
+    PitchYIN (unsigned int bufferSize_) : yin (1, int (bufferSize_)), bufferSize (bufferSize_), tolerence (0.15f), sampleRate(44100)
     {
     }
     
     void setSampleRate(unsigned int newSampleRate)
     {
         sampleRate = newSampleRate;
-        DBG ("sampleRate: " + String(sampleRate));
+        DBG ("sampleRate: " + juce::String(sampleRate));
     }
 
     /** Output the difference function */
-    void difference(AudioSampleBuffer& input) 
+    void difference(juce::AudioSampleBuffer& input)
     {
         float tmp;
         float *yinData = yin.getWritePointer(0);
         const float *inputData = input.getReadPointer(0);
 
-        FloatVectorOperations::fill(yinData, 0.0, yin.getNumSamples());
+        juce::FloatVectorOperations::fill(yinData, 0.0, yin.getNumSamples());
 
         for (int tau = 1; tau < yin.getNumSamples(); tau++) 
         {
@@ -109,7 +107,7 @@ public:
                     (yinData[period] < yinData[period + 1]))
             {
                 DBG ("return early");
-                return quadraticPeakPosition (yin.getReadPointer(0), period);
+                return quadraticPeakPosition (yin.getReadPointer(0), (unsigned int)period);
             }
         }
         return quadraticPeakPosition (yin.getReadPointer(0), minElement (yin.getReadPointer(0)));
@@ -120,12 +118,12 @@ public:
         float pitch = 0.0;
         //slideBlock (input);
         pitch = calculatePitch (inputData);
-        log->writeToLog("pitch: " + String(pitch));
+        log->writeToLog("pitch: " + juce::String(pitch));
         
         if (pitch > 0)
         {
-            pitch = sampleRate / (pitch + 0.0);
-            log->writeToLog ("pitchInHz: " + String(pitch));
+            pitch = sampleRate / (pitch + 0.0f);
+            log->writeToLog ("pitchInHz: " + juce::String(pitch));
         }
         else
         {
@@ -143,14 +141,14 @@ public:
     }
 
 private:
-    AudioSampleBuffer yin; //, buf;
+    juce::AudioSampleBuffer yin; //, buf;
     //float* yinData;
     unsigned int bufferSize;
     float tolerence; //, confidence;
     unsigned int sampleRate;
-    bool deltaWasNegative;
+    //bool deltaWasNegative = false;
     float currentPitch;
-    Logger *log;
+    juce::Logger *log;
 
 //    /** adapter to stack ibuf new samples at the end of buf, and trim `buf` to `bufsize` */
 //    void slideBlock (AudioSampleBuffer& ibuf)
@@ -184,7 +182,7 @@ private:
         s0 = data[x0];
         s1 = data[pos];
         s2 = data[x2];
-        return pos + 0.5 * (s0 - s2 ) / (s0 - 2.* s1 + s2);
+        return pos + 0.5f * (s0 - s2 ) / (s0 - 2.0f * s1 + s2);
     }
 
     unsigned int minElement (const float *data) noexcept
