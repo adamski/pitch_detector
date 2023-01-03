@@ -4,10 +4,6 @@
 #define AUDIOFFT_APPLE_ACCELERATE 1
 #endif
 
-#define CUTOFF 0.93f //0.97 is default
-#define SMALL_CUTOFF 0.5f
-#define LOWER_PITCH_CUTOFF 80.f //hz
-
 /**
  * TODO: Provide switch between time-based and FFT based methods
  */
@@ -15,6 +11,10 @@
 class PitchMPM
 {
 public:
+	static constexpr auto CUTOFF 					= 0.93f; //0.97 is default
+	static constexpr auto SMALL_CUTOFF 				= 0.5f;
+	static constexpr auto LOWER_PITCH_CUTOFF 		= 60.0f; //hz, slightly lower than lowest note on piano
+
     PitchMPM (size_t detectionBufferSize) : PitchMPM (44100, detectionBufferSize) {}
 
     PitchMPM (int detectionSampleRate, size_t detectionBufferSize) : bufferSize (detectionBufferSize),
